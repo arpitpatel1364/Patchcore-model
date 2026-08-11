@@ -1,0 +1,8 @@
+venv/
+dataset/
+outputs/
+weights/
+__pycache__/
+*.zip
+offline_packages/
+.DS_Store
