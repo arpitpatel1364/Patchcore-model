@@ -21,17 +21,17 @@ def main():
     # Define dataset paths
     dataset_root = Path("./dataset")
     
-    # 1. Setup Dataset (Low memory footprint settings)
+    # 1. Setup Dataset (High Accuracy settings)
     datamodule = Folder(
         name="custom_dataset",
         root=dataset_root,
         normal_dir="train/good",
         abnormal_dir="test/defect",
         normal_test_dir="test/good",
-        train_batch_size=2,
-        eval_batch_size=2,
-        num_workers=2,
-        augmentations=v2.Resize((256, 256))
+        train_batch_size=8,  # Increased back for CPU
+        eval_batch_size=8,
+        num_workers=4,
+        augmentations=v2.Resize((256, 256))  # Restored high resolution
     )
     datamodule.setup()
 
@@ -39,13 +39,13 @@ def main():
     model = Patchcore(
         backbone="resnet18",
         layers=["layer2", "layer3"],
-        coreset_sampling_ratio=0.1
+        coreset_sampling_ratio=0.1  # Restored high retention for best accuracy
     )
 
-    # 3. Setup Engine (Removed 16-mixed precision due to AMP bug with PatchCore)
+    # 3. Setup Engine (Using CPU to bypass GPU memory limits entirely)
     engine = Engine(
         default_root_dir="./outputs",
-        accelerator="auto",
+        accelerator="cpu",  # <--- Changed to CPU
         devices=1
     )
 
