@@ -225,7 +225,7 @@ def check_dataset():
     # MATHEMATICALLY SCALED FOR MAXIMUM STABILITY:
     # 500 images is the maximum the system RAM can handle.
     # --------------------------------------------------------
-    max_images = 1200
+    max_images = 500
     
     sampled_dir.mkdir(parents=True, exist_ok=True)
     existing_sampled = list(sampled_dir.glob("*"))

@@ -1,5 +1,7 @@
 from anomalib.engine import Engine
 from anomalib.models import Patchcore
+from anomalib.data import PredictDataset
+from torch.utils.data import DataLoader
 from pathlib import Path
 
 def main():
@@ -30,13 +32,17 @@ def main():
         
     image_path = str(image_list[0])
 
-    # 3. Run Inference
+    # 3. Create Dataset and Run Inference
     print(f"Running inference on {image_path}...")
     try:
+        # Create a proper dataloader for prediction
+        dataset = PredictDataset(path=image_path)
+        dataloader = DataLoader(dataset, batch_size=1)
+
         predictions = engine.predict(
             model=model,
             ckpt_path=checkpoint_path,
-            data_paths=[image_path]
+            dataloaders=[dataloader]
         )
         print("Inference completed successfully.")
         print(predictions)
