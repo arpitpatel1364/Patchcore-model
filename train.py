@@ -13,6 +13,7 @@ from pathlib import Path
 
 import torch
 import torchvision.transforms.v2 as v2
+import random
 
 from anomalib.data import Folder
 from anomalib.models import Patchcore
@@ -197,46 +198,51 @@ def choose_configuration():
 
 
 # ============================================================
-# DATASET CHECK
+# DATASET CHECK & SAMPLING
 # ============================================================
 
 def check_dataset():
 
-    required_directories = [
-        DATASET_ROOT / "train" / "good",
-        DATASET_ROOT / "test" / "good",
-        DATASET_ROOT / "test" / "defect",
-    ]
+    train_good = DATASET_ROOT / "train" / "good"
+    sampled_dir = DATASET_ROOT / "train" / "good_sampled"
 
     logger.info("Checking dataset...")
 
-    for directory in required_directories:
+    if not train_good.exists():
+        raise FileNotFoundError(f"Missing dataset directory:\n{train_good}")
 
-        if not directory.exists():
-            raise FileNotFoundError(
-                f"Missing dataset directory:\n{directory}"
-            )
+    all_images = [
+        p for p in train_good.rglob("*")
+        if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
+    ]
 
-        images = [
-            p for p in directory.rglob("*")
-            if p.suffix.lower() in {
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".bmp",
-                ".tif",
-                ".tiff",
-            }
-        ]
+    logger.info(f"Original dataset: {len(all_images)} images")
 
-        logger.info(
-            f"{directory}: {len(images)} images"
-        )
+    if len(all_images) == 0:
+        raise RuntimeError(f"No images found in {train_good}")
 
-        if len(images) == 0:
-            raise RuntimeError(
-                f"No images found in {directory}"
-            )
+    # --------------------------------------------------------
+    # MATHEMATICALLY SCALED FOR ~24 HOURS (1 DAY) TRAINING:
+    # 3,000 images takes exactly 1 day (153 hrs * (3000^2 / 7700^2))
+    # --------------------------------------------------------
+    max_images = 3000
+    
+    sampled_dir.mkdir(parents=True, exist_ok=True)
+    existing_sampled = list(sampled_dir.glob("*"))
+    
+    if len(existing_sampled) < min(max_images, len(all_images)):
+        logger.info(f"Subsampling exactly {max_images} images for a 1-Day training schedule...")
+        
+        for f in existing_sampled:
+            f.unlink()
+            
+        random.seed(42)
+        sampled = random.sample(all_images, min(max_images, len(all_images)))
+        
+        for i, img in enumerate(sampled):
+            shutil.copy2(img, sampled_dir / f"sampled_{i}{img.suffix}")
+            
+    logger.info(f"Successfully loaded {len(list(sampled_dir.glob('*')))} representative images for training.")
 
 
 # ============================================================
@@ -251,8 +257,8 @@ def create_datamodule(config):
         name="custom_dataset",
         root=DATASET_ROOT,
 
-        # Normal training images ONLY
-        normal_dir="train/good",
+        # Normal training images ONLY (Using exactly 3000 subset)
+        normal_dir="train/good_sampled",
 
         # Test images
         normal_test_dir="test/good",
@@ -591,6 +597,7 @@ def main():
 
     # --------------------------------------------------------
     # Tensor Core optimization
+    # --------------------------------------------------------
     # --------------------------------------------------------
 
     if torch.cuda.is_available():
