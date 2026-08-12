@@ -1,10 +1,12 @@
+import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 from anomalib.data import Folder
 from anomalib.models import Patchcore
 from anomalib.engine import Engine
 from pathlib import Path
 import torchvision.transforms.v2 as v2
 import shutil
-import os
 import logging
 import torch
 
@@ -19,16 +21,16 @@ def main():
     # Define dataset paths
     dataset_root = Path("./dataset")
     
-    # 1. Setup Dataset
+    # 1. Setup Dataset (Low memory footprint settings)
     datamodule = Folder(
         name="custom_dataset",
         root=dataset_root,
         normal_dir="train/good",
         abnormal_dir="test/defect",
         normal_test_dir="test/good",
-        train_batch_size=4,
-        eval_batch_size=4,
-        num_workers=4,
+        train_batch_size=2,
+        eval_batch_size=2,
+        num_workers=2,
         augmentations=v2.Resize((256, 256))
     )
     datamodule.setup()
@@ -40,11 +42,12 @@ def main():
         coreset_sampling_ratio=0.1
     )
 
-    # 3. Setup Engine
+    # 3. Setup Engine with 16-bit mixed precision to reduce VRAM usage by ~50%
     engine = Engine(
         default_root_dir="./outputs",
         accelerator="auto",
-        devices=1
+        devices=1,
+        precision="16-mixed"
     )
 
     # 4. Train the model
