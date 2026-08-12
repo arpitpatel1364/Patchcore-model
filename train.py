@@ -222,10 +222,10 @@ def check_dataset():
         raise RuntimeError(f"No images found in {train_good}")
 
     # --------------------------------------------------------
-    # MATHEMATICALLY SCALED FOR ~24 HOURS (1 DAY) TRAINING:
-    # 3,000 images takes exactly 1 day (153 hrs * (3000^2 / 7700^2))
+    # MATHEMATICALLY SCALED FOR MAXIMUM STABILITY:
+    # 500 images is the maximum the system RAM can handle.
     # --------------------------------------------------------
-    max_images = 3000
+    max_images = 1200
     
     sampled_dir.mkdir(parents=True, exist_ok=True)
     existing_sampled = list(sampled_dir.glob("*"))
