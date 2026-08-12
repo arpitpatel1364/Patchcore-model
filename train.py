@@ -42,12 +42,11 @@ def main():
         coreset_sampling_ratio=0.1
     )
 
-    # 3. Setup Engine with 16-bit mixed precision to reduce VRAM usage by ~50%
+    # 3. Setup Engine (Removed 16-mixed precision due to AMP bug with PatchCore)
     engine = Engine(
         default_root_dir="./outputs",
         accelerator="auto",
-        devices=1,
-        precision="16-mixed"
+        devices=1
     )
 
     # 4. Train the model
