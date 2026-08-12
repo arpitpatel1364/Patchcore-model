@@ -105,12 +105,12 @@ def choose_configuration():
 
         return {
             "accelerator": "cpu",
-            "batch_size": 4,  # Increased since we have 32GB RAM
+            "batch_size": 4,  
             "eval_batch_size": 4,
-            "backbone": "wide_resnet50_2", # Upgraded backbone for better accuracy on 32GB RAM
+            "backbone": "resnet50", # slightly smaller than wide_resnet50_2 to save RAM
             "layers": ["layer2", "layer3"],
-            "coreset": 0.15,
-            "image_size": 288,
+            "coreset": 0.10, # 10% coreset to save RAM during k-center-greedy
+            "image_size": 256, # 256x256 instead of 288 to reduce feature map size
         }
 
     vram = info["total_gb"]
@@ -228,9 +228,9 @@ def check_dataset():
 
     # --------------------------------------------------------
     # MATHEMATICALLY SCALED FOR MAXIMUM STABILITY:
-    # Increased to 1500 for higher training accuracy
+    # 800 images is safe for 32GB RAM without OOM killer.
     # --------------------------------------------------------
-    max_images = 1500
+    max_images = 800
     
     sampled_dir.mkdir(parents=True, exist_ok=True)
     existing_sampled = list(sampled_dir.glob("*"))
