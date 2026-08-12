@@ -5,11 +5,10 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 
 def main():
-    # 1. Initialize model with the same backbone used during training
     model = Patchcore(
         backbone="resnet18",
         layers=["layer2", "layer3"],
-        coreset_sampling_ratio=0.1
+        coreset_sampling_ratio=0.05
     )
     
     # 2. Setup Engine
