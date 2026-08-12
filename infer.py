@@ -5,6 +5,7 @@ import torchvision.transforms.v2 as v2
 from pathlib import Path
 
 def main():
+    # 1. Load Model Setup
     model = Patchcore(
         backbone="resnet18",
         layers=["layer2", "layer3"],
@@ -15,25 +16,27 @@ def main():
     
     checkpoint_path = "./weights/patchcore_best.ckpt" 
     
-    defect_dir = Path("./dataset/test/defect")
-    if not defect_dir.exists():
-        print(f"No images found in {defect_dir}.")
+    if not Path(checkpoint_path).exists():
+        print(f"Cannot find model file at: {checkpoint_path}")
         return
 
-    # Use Folder datamodule for automatic resizing and proper PyTorch collation
+    # 2. Setup the Exact Same Folder Datamodule used in train.py
+    # This completely bypasses PyTorch collation errors because it uses Anomalib's native pipeline!
     datamodule = Folder(
-        name="predict_dataset",
+        name="test_dataset",
         root="./dataset",
         normal_dir="train/good",
-        predict_dir="test/defect",
-        predict_batch_size=1,
-        augmentations=v2.Resize((224, 224)) # Critical: MUST match train.py!
+        abnormal_dir="test/defect",
+        normal_test_dir="test/good",
+        eval_batch_size=1,
+        augmentations=v2.Resize((224, 224))
     )
     datamodule.setup()
 
-    print(f"Running inference on images in {defect_dir}...")
+    # 3. Run Inference using the tested pipeline
+    print("Running evaluation on the test images...")
     try:
-        predictions = engine.predict(
+        engine.test(
             model=model,
             ckpt_path=checkpoint_path,
             datamodule=datamodule
