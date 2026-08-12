@@ -18,9 +18,8 @@ def main():
         devices=1
     )
     
-    # Update this path with the actual checkpoint generated in outputs/ during training
-    # Anomalib automatically creates timestamped or versioned folders inside outputs/
-    checkpoint_path = "./outputs/Patchcore/custom_dataset/latest/weights/lightning_logs/version_0/checkpoints/last.ckpt" 
+    # The train.py script automatically saved the final model here:
+    checkpoint_path = "./weights/patchcore_best.ckpt" 
     
     # Path to test image (dynamically pick the first defect image)
     defect_dir = Path("./dataset/test/defect")
