@@ -91,21 +91,26 @@ def get_gpu_info():
 
 def choose_configuration():
 
-    info = get_gpu_info()
+    # Force CPU mode by ignoring GPU checks
+    info = {
+        "gpu": False,
+        "name": "CPU (Forced)",
+        "total_gb": 32,
+        "free_gb": 32,
+    }
 
     if not info["gpu"]:
 
-        logger.warning("CUDA not available.")
-        logger.warning("Using CPU mode.")
+        logger.warning("Forcing CPU mode as requested.")
 
         return {
             "accelerator": "cpu",
-            "batch_size": 1,
-            "eval_batch_size": 1,
-            "backbone": "resnet18",
+            "batch_size": 4,  # Increased since we have 32GB RAM
+            "eval_batch_size": 4,
+            "backbone": "wide_resnet50_2", # Upgraded backbone for better accuracy on 32GB RAM
             "layers": ["layer2", "layer3"],
-            "coreset": 0.05,
-            "image_size": 224,
+            "coreset": 0.15,
+            "image_size": 288,
         }
 
     vram = info["total_gb"]
@@ -126,8 +131,8 @@ def choose_configuration():
             "eval_batch_size": 8,
             "backbone": "wide_resnet50_2",
             "layers": ["layer2", "layer3"],
-            "coreset": 0.10,
-            "image_size": 256,
+            "coreset": 0.15,
+            "image_size": 288,
         }
 
     # --------------------------------------------------------
@@ -142,8 +147,8 @@ def choose_configuration():
             "eval_batch_size": 4,
             "backbone": "wide_resnet50_2",
             "layers": ["layer2", "layer3"],
-            "coreset": 0.10,
-            "image_size": 256,
+            "coreset": 0.15,
+            "image_size": 288,
         }
 
     # --------------------------------------------------------
@@ -158,8 +163,8 @@ def choose_configuration():
             "eval_batch_size": 2,
             "backbone": "resnet18",
             "layers": ["layer2", "layer3"],
-            "coreset": 0.10,
-            "image_size": 224,
+            "coreset": 0.15,
+            "image_size": 256,
         }
 
     # --------------------------------------------------------
@@ -174,8 +179,8 @@ def choose_configuration():
             "eval_batch_size": 1,
             "backbone": "resnet18",
             "layers": ["layer2", "layer3"],
-            "coreset": 0.05,
-            "image_size": 224,
+            "coreset": 0.10,
+            "image_size": 256,
         }
 
     # --------------------------------------------------------
@@ -190,8 +195,8 @@ def choose_configuration():
             "eval_batch_size": 1,
             "backbone": "resnet18",
             "layers": ["layer2", "layer3"],
-            "coreset": 0.02,
-            "image_size": 224,
+            "coreset": 0.05,
+            "image_size": 256,
         }
 
     return config
@@ -223,9 +228,9 @@ def check_dataset():
 
     # --------------------------------------------------------
     # MATHEMATICALLY SCALED FOR MAXIMUM STABILITY:
-    # 500 images is the maximum the system RAM can handle.
+    # Increased to 1500 for higher training accuracy
     # --------------------------------------------------------
-    max_images = 500
+    max_images = 1500
     
     sampled_dir.mkdir(parents=True, exist_ok=True)
     existing_sampled = list(sampled_dir.glob("*"))
@@ -269,9 +274,10 @@ def create_datamodule(config):
 
         num_workers=NUM_WORKERS,
 
-        augmentations=v2.Resize(
-            (config["image_size"], config["image_size"])
-        ),
+        augmentations=v2.Compose([
+            v2.Resize((config["image_size"], config["image_size"])),
+            v2.ColorJitter(brightness=0.1, contrast=0.1)
+        ]),
     )
 
     datamodule.setup()
@@ -548,7 +554,7 @@ def save_weights():
 
     destination = (
         WEIGHTS_DIR /
-        "patchcore_best.ckpt"
+        "patchcore_v2.ckpt"
     )
 
     shutil.copy2(

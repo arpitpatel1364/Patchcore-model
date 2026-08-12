@@ -6,3 +6,5 @@ __pycache__/
 *.zip
 offline_packages/
 .DS_Store
+.venv_312/
+*.mp4
