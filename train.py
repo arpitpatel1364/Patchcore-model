@@ -6,7 +6,13 @@ import torchvision.transforms.v2 as v2
 import shutil
 import os
 import logging
+import torch
+
 def main():
+    # Set matrix multiplication precision for RTX Tensor Cores
+    if torch.cuda.is_available():
+        torch.set_float32_matmul_precision('high')
+
     # Setup logging to show proper logs in terminal
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     
@@ -20,8 +26,8 @@ def main():
         normal_dir="train/good",
         abnormal_dir="test/defect",
         normal_test_dir="test/good",
-        train_batch_size=16,
-        eval_batch_size=16,
+        train_batch_size=4,
+        eval_batch_size=4,
         num_workers=4,
         augmentations=v2.Resize((256, 256))
     )
