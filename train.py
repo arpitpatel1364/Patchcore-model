@@ -107,10 +107,10 @@ def choose_configuration():
             "accelerator": "cpu",
             "batch_size": 4,  
             "eval_batch_size": 4,
-            "backbone": "resnet50", # slightly smaller than wide_resnet50_2 to save RAM
+            "backbone": "wide_resnet50_2", # Maximum accuracy backbone
             "layers": ["layer2", "layer3"],
-            "coreset": 0.10, # 10% coreset to save RAM during k-center-greedy
-            "image_size": 256, # 256x256 instead of 288 to reduce feature map size
+            "coreset": 0.05, # Reduced from 0.10 to save RAM and time during k-center-greedy
+            "image_size": 224, # Reduced from 256 to reduce feature map size
         }
 
     vram = info["total_gb"]
@@ -227,10 +227,10 @@ def check_dataset():
         raise RuntimeError(f"No images found in {train_good}")
 
     # --------------------------------------------------------
-    # MATHEMATICALLY SCALED FOR MAXIMUM STABILITY:
-    # 800 images is safe for 32GB RAM without OOM killer.
+    # MATHEMATICALLY SCALED FOR MAXIMUM STABILITY & ACCURACY:
+    # Using 250 images with wide_resnet50_2 for maximum accuracy without crashing RAM.
     # --------------------------------------------------------
-    max_images = 800
+    max_images = 250
     
     sampled_dir.mkdir(parents=True, exist_ok=True)
     existing_sampled = list(sampled_dir.glob("*"))
@@ -468,8 +468,8 @@ def train_dynamic(config):
     config["batch_size"] = 1
     config["eval_batch_size"] = 1
 
-    # CPU fallback uses smaller model to remain stable.
-    config["backbone"] = "resnet18"
+    # CPU fallback maintains high accuracy backbone.
+    config["backbone"] = "wide_resnet50_2"
     config["coreset"] = min(
         config["coreset"],
         0.05
