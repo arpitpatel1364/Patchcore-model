@@ -36,7 +36,7 @@ IMAGE_SIZE = 224
 # Change to False only if you have a very large dataset.
 USE_WIDER_BACKBONE = True
 
-NUM_WORKERS = 4
+NUM_WORKERS = 0
 
 
 # ============================================================
@@ -337,8 +337,9 @@ def create_engine(config):
         # PatchCore only needs one pass.
         max_epochs=1,
 
-        # Don't waste memory on sanity validation.
+        # Don't waste memory on sanity validation or epoch validation loop.
         num_sanity_val_steps=0,
+        limit_val_batches=0,
 
         # Don't retain unnecessary computation graphs.
         inference_mode=True,
