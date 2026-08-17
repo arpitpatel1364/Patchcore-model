@@ -259,16 +259,22 @@ def create_datamodule(config):
 
     logger.info("Creating datamodule...")
 
+    normal_test_dir = "test/good" if (DATASET_ROOT / "test" / "good").exists() else None
+    abnormal_dir = "test/defect" if (DATASET_ROOT / "test" / "defect").exists() else None
+
+    if normal_test_dir is None or abnormal_dir is None:
+        logger.info("Test set not found (test/good or test/defect). Training on normal/good images only.")
+
     datamodule = Folder(
         name="custom_dataset",
         root=DATASET_ROOT,
 
-        # Normal training images ONLY (Using exactly 3000 subset)
+        # Normal training images ONLY
         normal_dir="train/good_sampled",
 
-        # Test images
-        normal_test_dir="test/good",
-        abnormal_dir="test/defect",
+        # Test images (None if missing)
+        normal_test_dir=normal_test_dir,
+        abnormal_dir=abnormal_dir,
 
         train_batch_size=config["batch_size"],
         eval_batch_size=config["eval_batch_size"],
@@ -397,14 +403,15 @@ def train_dynamic(config):
 
             logger.info("Training completed successfully.")
 
-            logger.info("Starting evaluation...")
-
-            engine.test(
-                model=model,
-                datamodule=datamodule,
-            )
-
-            logger.info("Evaluation completed.")
+            if (DATASET_ROOT / "test" / "good").exists() and (DATASET_ROOT / "test" / "defect").exists():
+                logger.info("Starting evaluation...")
+                engine.test(
+                    model=model,
+                    datamodule=datamodule,
+                )
+                logger.info("Evaluation completed.")
+            else:
+                logger.info("Skipping evaluation (no test dataset provided). Training complete!")
 
             return engine, model
 
@@ -487,10 +494,13 @@ def train_dynamic(config):
         datamodule=datamodule,
     )
 
-    engine.test(
-        model=model,
-        datamodule=datamodule,
-    )
+    if (DATASET_ROOT / "test" / "good").exists() and (DATASET_ROOT / "test" / "defect").exists():
+        engine.test(
+            model=model,
+            datamodule=datamodule,
+        )
+    else:
+        logger.info("Skipping CPU evaluation (no test dataset provided). Training complete!")
 
     return engine, model
 
