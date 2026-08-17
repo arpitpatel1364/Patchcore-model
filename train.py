@@ -24,7 +24,9 @@ from anomalib.engine import Engine
 # CONFIGURATION
 # ============================================================
 
-DATASET_ROOT = Path("./dataset")
+# Default to ./new-dataset if present, otherwise ./dataset
+DEFAULT_DATASET = Path("./new-dataset") if Path("./new-dataset").exists() else Path("./dataset")
+DATASET_ROOT = DEFAULT_DATASET
 OUTPUT_DIR = Path("./outputs")
 WEIGHTS_DIR = Path("./weights")
 
@@ -206,12 +208,15 @@ def choose_configuration():
 # DATASET CHECK & SAMPLING
 # ============================================================
 
-def check_dataset():
+def check_dataset(dataset_root=None, max_images=300):
+    global DATASET_ROOT
+    if dataset_root:
+        DATASET_ROOT = Path(dataset_root)
 
     train_good = DATASET_ROOT / "train" / "good"
     sampled_dir = DATASET_ROOT / "train" / "good_sampled"
 
-    logger.info("Checking dataset...")
+    logger.info(f"Checking dataset at {DATASET_ROOT}...")
 
     if not train_good.exists():
         raise FileNotFoundError(f"Missing dataset directory:\n{train_good}")
@@ -226,23 +231,19 @@ def check_dataset():
     if len(all_images) == 0:
         raise RuntimeError(f"No images found in {train_good}")
 
-    # --------------------------------------------------------
-    # MATHEMATICALLY SCALED FOR MAXIMUM STABILITY & ACCURACY:
-    # Using 250 images with wide_resnet50_2 for maximum accuracy without crashing RAM.
-    # --------------------------------------------------------
-    max_images = 250
-    
     sampled_dir.mkdir(parents=True, exist_ok=True)
     existing_sampled = list(sampled_dir.glob("*"))
     
-    if len(existing_sampled) < min(max_images, len(all_images)):
-        logger.info(f"Subsampling exactly {max_images} images for a 1-Day training schedule...")
+    target_count = min(max_images, len(all_images))
+
+    if len(existing_sampled) < target_count:
+        logger.info(f"Subsampling {target_count} images for training...")
         
         for f in existing_sampled:
             f.unlink()
             
         random.seed(42)
-        sampled = random.sample(all_images, min(max_images, len(all_images)))
+        sampled = random.sample(all_images, target_count)
         
         for i, img in enumerate(sampled):
             shutil.copy2(img, sampled_dir / f"sampled_{i}{img.suffix}")
@@ -574,16 +575,32 @@ def save_weights():
 # ============================================================
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Train PatchCore Model on Dataset")
+    parser.add_argument(
+        "--dataset_path", 
+        type=str, 
+        default=str(DEFAULT_DATASET), 
+        help="Path to dataset root folder containing train/good (default: ./new-dataset if present, else ./dataset)"
+    )
+    parser.add_argument(
+        "--max_images",
+        type=int,
+        default=300,
+        help="Maximum images to sample for training (default: 300)"
+    )
+    args = parser.parse_args()
 
     logger.info("=" * 70)
     logger.info("DYNAMIC PATCHCORE TRAINING")
+    logger.info(f"Dataset Path: {args.dataset_path}")
     logger.info("=" * 70)
 
     # --------------------------------------------------------
     # Check dataset
     # --------------------------------------------------------
 
-    check_dataset()
+    check_dataset(dataset_root=args.dataset_path, max_images=args.max_images)
 
     # --------------------------------------------------------
     # Select hardware configuration
